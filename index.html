@@ -1,316 +1,542 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulacao DRE · Venteno</title>
+    <title>DRE Gerencial · Venteno</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --laranja: #F47920;
-            --cinza-escuro: #2C2C2C;
-            --cinza-card: #3A3A3A;
-            --cinza-claro: #4A4A4A;
-            --branco: #E0E0E0;
+            --arctic: #F6F7EB;
+            --fiery: #E94F37;
+            --midnight: #393E41;
+            --midnight-light: #4a5155;
+            --arctic-dark: #e8e9dd;
+            --white: #ffffff;
+            --border: rgba(57,62,65,0.12);
+            --shadow: 0 4px 24px rgba(57,62,65,0.08);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background-color: var(--cinza-escuro);
-            color: var(--branco);
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            padding: 20px;
+            background-color: var(--arctic);
+            color: var(--midnight);
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            line-height: 1.4;
         }
+        .container { max-width: 1440px; margin: auto; padding: 20px 24px; }
+
+        /* HEADER */
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        .header img { height: 50px; }
-        .container { max-width: 1400px; margin: auto; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .full { grid-column: span 2; }
-        .card {
-            background: var(--cinza-card);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-        h2, h3 { color: var(--laranja); margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
-        th { background: var(--laranja); padding: 8px 6px; text-align: right; }
-        td { padding: 6px 6px; border-bottom: 1px solid #555; text-align: right; }
-        td:first-child, th:first-child { text-align: left; }
-        input[type="number"] {
-            width: 110px;
-            background: var(--cinza-claro);
-            border: 1px solid #666;
+            background: var(--midnight);
             color: white;
-            padding: 4px 6px;
-            border-radius: 4px;
+            border-radius: 16px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: var(--shadow);
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .header-left img { height: 40px; }
+        .header-title { font-size: 0.9em; opacity: 0.8; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .hierarchy { display: flex; gap: 12px; }
+        .hierarchy-pill {
+            background: rgba(246,247,235,0.1);
+            border: 1px solid rgba(246,247,235,0.2);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.8em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ceo-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 2px solid rgba(246,247,235,0.2);
+            padding-left: 16px;
+        }
+        .ceo-card img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid var(--fiery);
+            object-fit: cover;
+        }
+        .ceo-info { font-size: 0.8em; }
+        .ceo-name { font-weight: 600; color: white; }
+        .ceo-role { opacity: 0.7; font-size: 0.75em; }
+
+        /* FILTER BAR */
+        .filter-bar {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 14px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: var(--shadow);
+        }
+        .month-btns { display: flex; gap: 8px; }
+        .month-btn {
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--white);
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .month-btn.active { background: var(--fiery); color: white; border-color: var(--fiery); }
+        .toggle-sim {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+        }
+        .toggle-sim input { accent-color: var(--fiery); }
+
+        /* KPI CARDS */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .kpi-label { font-size: 0.8em; color: var(--midnight-light); }
+        .kpi-value { font-size: 1.8em; font-weight: 700; color: var(--midnight); }
+        .kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+
+        /* CHARTS GRID */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .chart-card {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+        .chart-card h3 { font-size: 0.9em; margin-bottom: 12px; color: var(--midnight); }
+        .chart-container { height: 280px; position: relative; }
+
+        /* SIMULATION PANEL */
+        .sim-panel {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+        .sim-slider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .sim-slider label { width: 160px; font-size: 0.85em; }
+        .sim-slider input[type=range] { flex: 1; accent-color: var(--fiery); }
+        .sim-slider span { width: 50px; text-align: right; font-size: 0.85em; font-weight: 600; }
+
+        /* TABLE */
+        .table-card {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8em; }
+        th {
+            background: var(--midnight);
+            color: white;
+            padding: 10px 8px;
+            text-align: right;
+            font-weight: 600;
+        }
+        th:first-child { text-align: left; }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+            text-align: right;
+        }
+        td:first-child { text-align: left; font-weight: 500; }
+        input.editable {
+            width: 110px;
+            background: var(--arctic);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px;
             text-align: right;
             font-size: 0.9em;
         }
-        select {
-            padding: 10px 20px; font-size: 1em; border-radius: 8px;
-            border: 1px solid var(--laranja); background: var(--cinza-card);
-            color: white; cursor: pointer;
+        input.editable:focus { outline: 2px solid var(--fiery); border-color: transparent; }
+
+        /* FOOTER */
+        .footer {
+            text-align: center;
+            font-size: 0.75em;
+            color: var(--midnight-light);
+            padding: 16px 0;
         }
-        .kpi-row { display: flex; gap: 20px; flex-wrap: wrap; }
-        .kpi {
-            flex: 1; min-width: 200px; background: var(--cinza-claro);
-            border-radius: 10px; padding: 20px; text-align: center;
-        }
-        .kpi-valor { font-size: 1.8em; font-weight: bold; color: var(--laranja); }
-        .chart-box { height: 300px; position: relative; }
-        @media (max-width: 900px) {
-            .grid { grid-template-columns: 1fr; }
-            .full { grid-column: span 1; }
+
+        @media (max-width: 1000px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 <div class="container">
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-left">
+            <img src="https://venteno.com.br/wp-content/uploads/2023/08/Componente-42-%E2%80%93-1-2.png" alt="Venteno">
+        </div>
+        <div class="header-right">
+            <div class="hierarchy">
+                <div class="hierarchy-pill">👑 CEO: <strong>João</strong></div>
+                <div class="hierarchy-pill">📊 Analista: <strong>Henrique</strong></div>
+            </div>
+            <div class="ceo-card">
+                <img src="https://media.base44.com/images/public/69ffb7e81757561222fafc9a/87312cfd0_Joo.jpeg" alt="João - CEO">
+                <div class="ceo-info">
+                    <div class="ceo-name">João</div>
+                    <div class="ceo-role">CEO & Fundador</div>
+                </div>
+            </div>
+        </div>
+    </header>
 
-    <div class="header">
-        <img src="https://venteno.com.br/wp-content/uploads/2023/08/Componente-42-%E2%80%93-1-2.png" alt="Venteno Express">
-        <div>
-            <select id="cenarioSelect">
-                <option value="pessimista">Pessimista</option>
-                <option value="realista" selected>Realista</option>
-                <option value="otimista">Otimista</option>
-            </select>
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+        <div class="month-btns" id="monthButtons"></div>
+        <div class="toggle-sim">
+            <label><input type="checkbox" id="simToggle" checked> Simulação</label>
         </div>
     </div>
 
-    <div class="kpi-row" style="margin-bottom:20px;">
-        <div class="kpi"><div class="kpi-valor" id="kpiROB">-</div><small>Receita Bruta (ROB)</small></div>
-        <div class="kpi"><div class="kpi-valor" id="kpiLB">-</div><small>Lucro Bruto (LB)</small></div>
-        <div class="kpi"><div class="kpi-valor" id="kpiLL">-</div><small>Lucro Liquido (LL)</small></div>
+    <!-- KPI CARDS -->
+    <div class="kpi-grid" id="kpiContainer"></div>
+
+    <!-- SIMULATION PANEL -->
+    <div class="sim-panel" id="simPanel"></div>
+
+    <!-- CHARTS -->
+    <div class="charts-grid">
+        <div class="chart-card"><h3>Receita e Deduções</h3><div class="chart-container"><canvas id="chartRevenue"></canvas></div></div>
+        <div class="chart-card"><h3>Evolução do Lucro</h3><div class="chart-container"><canvas id="chartProfit"></canvas></div></div>
+        <div class="chart-card"><h3>Margens (%)</h3><div class="chart-container"><canvas id="chartMargin"></canvas></div></div>
+        <div class="chart-card"><h3>Composição de Custos (Abril)</h3><div class="chart-container"><canvas id="chartCost"></canvas></div></div>
     </div>
 
-    <div class="card full" style="overflow-x:auto;">
-        <h2>DRE - Simulacao</h2>
-        <table id="tabelaDRE">
-            <thead>
-                <tr>
-                    <th>Conta</th>
-                    <th>Fevereiro</th><th>Marco</th><th>Abril</th>
-                    <th>Sim. Fev</th><th>Sim. Mar</th><th>Sim. Abr</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+    <!-- TABLE -->
+    <div class="table-card" id="tableContainer"></div>
 
-    <div class="grid" style="margin-top:20px;">
-        <div class="card">
-            <h3>Lucro Liquido (Real vs Simulado)</h3>
-            <div class="chart-box"><canvas id="graficoLL"></canvas></div>
-        </div>
-        <div class="card">
-            <h3>Composicao do Lucro Projetado</h3>
-            <div class="chart-box"><canvas id="graficoComposicao"></canvas></div>
-        </div>
-        <div class="card full">
-            <h3>Premissas & Conclusoes</h3>
-            <div id="premissasTexto"></div>
-        </div>
-    </div>
-
+    <div class="footer">Venteno Transportes © 2026 — DRE Gerencial Automatizado · Desenvolvido por Henrique (Jipe)</div>
 </div>
 
 <script>
-// ================= DADOS REAIS =================
-const real = {
-    'Receita Operacional Bruta (ROB)': [7294745.23, 9175593.27, 9063284.40],
-    'LANCAMENTO MANUAL':               [506.64, 0.00, 13460.00],
-    'IMPOSTOS SOBRE SERVICOS':         [636973.47, 634991.70, 602692.33],
-    'Receita Operacional Liquida (ROL)':[6657771.76, 8540601.57, 8460592.07],
-    'FRETE TRANSFERENCIA':             [3023544.67, 3918478.77, 4345392.60],
-    'TERMINAL':                         [328147.57, 338026.68, 337245.04],
-    'FOLHA':                            [567275.59, 650238.28, 672900.86],
-    'Custos dos Servicos Prestados (CSP)':[3918967.83, 4906743.73, 5355538.50],
-    'Lucro Bruto - DRE (LB)':          [2738803.93, 3633857.84, 3105053.57],
-    'DESPESAS ADM':                     [226477.64, 257700.41, 238362.48],
-    'DESPESA OPR':                      [1412560.45, 1482903.26, 1459683.33],
-    'Lucro Operacional (LO)':          [822057.08, 1645377.05, 1135860.22],
-    'FINANCEIRA':                       [460210.85, 595558.75, 572237.51],
-    'LUCRO LIQUIDO (LL)':              [297221.94, 1056625.78, 467833.43]
-};
+// ===================== DADOS REAIS =====================
+const realData = [
+    { month: "Fevereiro", year: 2026, receita_bruta: 7294745.23, impostos_servicos: 636973.47, receita_liquida: 6657771.76, frete_transferencia: 3023544.67, terminal: 328147.57, folha: 567275.59, csp_total: 3918967.83, lucro_bruto: 2738803.93, despesas_adm: 226477.64, despesa_opr: 1412560.45, servico_prestado: 232581.63, comercial: 1350.00, imobilizado: 43777.13, lucro_operacional: 822057.08, financeira: 460210.85, lucro_liquido: 297221.94 },
+    { month: "Março", year: 2026, receita_bruta: 9175593.27, impostos_servicos: 634991.70, receita_liquida: 8540601.57, frete_transferencia: 3918478.77, terminal: 338026.68, folha: 650238.28, csp_total: 4906743.73, lucro_bruto: 3633857.84, despesas_adm: 257700.41, despesa_opr: 1482903.26, servico_prestado: 218196.65, comercial: 130.00, imobilizado: 29550.47, lucro_operacional: 1645377.05, financeira: 595558.75, lucro_liquido: 1056625.78 },
+    { month: "Abril", year: 2026, receita_bruta: 9063284.40, impostos_servicos: 602692.33, receita_liquida: 8460592.07, frete_transferencia: 4345392.60, terminal: 337245.04, folha: 672900.86, csp_total: 5355538.50, lucro_bruto: 3105053.57, despesas_adm: 238362.48, despesa_opr: 1459683.33, servico_prestado: 234496.65, comercial: 2157.90, imobilizado: 34492.99, lucro_operacional: 1135860.22, financeira: 572237.51, lucro_liquido: 467833.43 }
+];
 
-const meses = ['Fevereiro', 'Marco', 'Abril'];
-const contas = Object.keys(real);
+let simData = JSON.parse(JSON.stringify(realData));
+let selectedMonths = ["Fevereiro", "Março", "Abril"];
+let showSim = true;
+let sliders = {};
 
-// ================= CENARIOS =================
-const cenarios = {
-    pessimista: {
-        nome: 'Pessimista',
-        fatorReceita: 1.6,
-        fatorFrete: 1.9,
-        fatorADM: 1.8,
-        fatorImpostos: 1.8,
-        desc: 'Crescimento moderado (60% da receita nova), custos sobem mais que o proporcional. Margem BDF: 12%.'
-    },
-    realista: {
-        nome: 'Realista',
-        fatorReceita: 2.0,
-        fatorFrete: 1.9,
-        fatorADM: 1.8,
-        fatorImpostos: 1.9,
-        desc: 'Crescimento esperado (100% da receita nova). Margem BDF: 17%. Premissa do CEO.'
-    },
-    otimista: {
-        nome: 'Otimista',
-        fatorReceita: 2.4,
-        fatorFrete: 2.2,
-        fatorADM: 2.0,
-        fatorImpostos: 2.1,
-        desc: 'Crescimento acelerado (140% da receita nova). Margem BDF: 22%.'
-    }
-};
+// ===================== FUNÇÕES =====================
+const fmt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-const fatBDFMedio = 7717213.73;
-
-// ================= SIMULACAO =================
-function simular(cenario) {
-    const cfg = cenarios[cenario];
-    const resultado = {};
-
-    contas.forEach(conta => {
-        const vals = real[conta];
-        if (!vals) return;
-        let simVals = [...vals];
-
-        if (conta === 'Receita Operacional Bruta (ROB)') {
-            simVals = vals.map(v => v * cfg.fatorReceita);
-        } else if (conta === 'FRETE TRANSFERENCIA') {
-            simVals = vals.map(v => v * cfg.fatorFrete);
-        } else if (conta === 'DESPESAS ADM') {
-            simVals = vals.map(v => v * cfg.fatorADM);
-        } else if (conta === 'IMPOSTOS SOBRE SERVICOS') {
-            simVals = vals.map(v => v * cfg.fatorImpostos);
-        }
-
-        resultado[conta] = { real: vals, sim: simVals };
-    });
-
-    resultado['Receita Operacional Liquida (ROL)'] = {
-        real: resultado['Receita Operacional Bruta (ROB)'].real.map((v,i) => v - resultado['IMPOSTOS SOBRE SERVICOS'].real[i]),
-        sim: resultado['Receita Operacional Bruta (ROB)'].sim.map((v,i) => v - resultado['IMPOSTOS SOBRE SERVICOS'].sim[i])
-    };
-    resultado['Custos dos Servicos Prestados (CSP)'] = {
-        real: resultado['FRETE TRANSFERENCIA'].real.map((v,i) => v + resultado['TERMINAL'].real[i] + resultado['FOLHA'].real[i]),
-        sim: resultado['FRETE TRANSFERENCIA'].sim.map((v,i) => v + resultado['TERMINAL'].sim[i] + resultado['FOLHA'].sim[i])
-    };
-    resultado['Lucro Bruto - DRE (LB)'] = {
-        real: resultado['Receita Operacional Liquida (ROL)'].real.map((v,i) => v - resultado['Custos dos Servicos Prestados (CSP)'].real[i]),
-        sim: resultado['Receita Operacional Liquida (ROL)'].sim.map((v,i) => v - resultado['Custos dos Servicos Prestados (CSP)'].sim[i])
-    };
-    resultado['Lucro Operacional (LO)'] = {
-        real: resultado['Lucro Bruto - DRE (LB)'].real.map((v,i) => v - resultado['DESPESAS ADM'].real[i] - resultado['DESPESA OPR'].real[i]),
-        sim: resultado['Lucro Bruto - DRE (LB)'].sim.map((v,i) => v - resultado['DESPESAS ADM'].sim[i] - resultado['DESPESA OPR'].sim[i])
-    };
-    resultado['LUCRO LIQUIDO (LL)'] = {
-        real: resultado['Lucro Operacional (LO)'].real.map((v,i) => v - resultado['FINANCEIRA'].real[i]),
-        sim: resultado['Lucro Operacional (LO)'].sim.map((v,i) => v - resultado['FINANCEIRA'].sim[i])
-    };
-
-    return resultado;
+function getFilteredData() {
+    const realFiltered = realData.filter(d => selectedMonths.includes(d.month));
+    const simFiltered = simData.filter(d => selectedMonths.includes(d.month));
+    return { realFiltered, simFiltered };
 }
 
-let dadosSimulados = simular('realista');
-let graficoLL, graficoComp;
+function updateAll() {
+    renderKPIs();
+    renderSimPanel();
+    renderTable();
+    updateCharts();
+}
 
-function formatar(val) { return val.toLocaleString('pt-BR', {minimumFractionDigits:2}); }
+// ===================== KPI =====================
+function renderKPIs() {
+    const { realFiltered, simFiltered } = getFilteredData();
+    const latest = realFiltered[realFiltered.length - 1];
+    const simLatest = simFiltered[simFiltered.length - 1];
+    if (!latest) return;
 
-function atualizarDashboard(cenario) {
-    dadosSimulados = simular(cenario);
-    const cfg = cenarios[cenario];
+    const kpis = [
+        { label: "Receita Bruta", value: showSim ? simLatest.receita_bruta : latest.receita_bruta, icon: "💰", bg: "rgba(233,79,55,0.12)", color: "#E94F37" },
+        { label: "Receita Líquida", value: showSim ? simLatest.receita_liquida : latest.receita_liquida, icon: "🧾", bg: "rgba(57,62,65,0.10)", color: "#393E41" },
+        { label: "Lucro Operacional", value: showSim ? simLatest.lucro_operacional : latest.lucro_operacional, icon: "🏦", bg: "rgba(233,79,55,0.12)", color: "#E94F37" },
+        { label: "Lucro Líquido", value: showSim ? simLatest.lucro_liquido : latest.lucro_liquido, icon: "📈", bg: "rgba(57,62,65,0.10)", color: "#393E41" }
+    ];
 
-    const llReal = dadosSimulados['LUCRO LIQUIDO (LL)'].real;
-    const llSim = dadosSimulados['LUCRO LIQUIDO (LL)'].sim;
-    const robSim = dadosSimulados['Receita Operacional Bruta (ROB)'].sim;
-    const lbSim = dadosSimulados['Lucro Bruto - DRE (LB)'].sim;
-    const mediaLLReal = llReal.reduce((a,b)=>a+b)/3;
-    const mediaLLSim = llSim.reduce((a,b)=>a+b)/3;
+    document.getElementById('kpiContainer').innerHTML = kpis.map(k => `
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:${k.bg}; color:${k.color};">${k.icon}</div>
+            <div class="kpi-label">${k.label}</div>
+            <div class="kpi-value">R$ ${fmt(k.value)}</div>
+        </div>
+    `).join('');
+}
 
-    document.getElementById('kpiROB').innerText = 'R$ ' + formatar(robSim[2]);
-    document.getElementById('kpiLB').innerText = 'R$ ' + formatar(lbSim[2]);
-    document.getElementById('kpiLL').innerText = 'R$ ' + formatar(llSim[2]);
+// ===================== SIMULATION =====================
+function renderSimPanel() {
+    const { realFiltered } = getFilteredData();
+    const monthReal = realFiltered[realFiltered.length - 1];
+    if (!monthReal) return;
 
-    const tbody = document.querySelector('#tabelaDRE tbody');
-    tbody.innerHTML = '';
-    contas.forEach(conta => {
-        if (!dadosSimulados[conta]) return;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${conta}</td>` +
-            dadosSimulados[conta].real.map(v => `<td>R$ ${formatar(v)}</td>`).join('') +
-            dadosSimulados[conta].sim.map(v => `<td>R$ ${formatar(v)}</td>`).join('');
-        tbody.appendChild(tr);
-    });
+    const fields = [
+        { key: "receita_bruta", label: "Receita Bruta" },
+        { key: "impostos_servicos", label: "Impostos s/ Serviços" },
+        { key: "frete_transferencia", label: "Frete Transferência" },
+        { key: "terminal", label: "Terminal" },
+        { key: "folha", label: "Folha" },
+        { key: "despesas_adm", label: "Despesas ADM" },
+        { key: "despesa_opr", label: "Despesa OPR" },
+        { key: "financeira", label: "Financeira" }
+    ];
 
-    if (graficoLL) graficoLL.destroy();
-    const ctx = document.getElementById('graficoLL').getContext('2d');
-    graficoLL = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: meses,
-            datasets: [
-                { label: 'LL Real', data: llReal, borderColor: '#888', backgroundColor: 'rgba(136,136,136,0.2)', tension: 0.3 },
-                { label: 'LL Simulado', data: llSim, borderColor: '#F47920', backgroundColor: 'rgba(244,121,32,0.2)', tension: 0.3 }
-            ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: '#E0E0E0' } } },
-            scales: {
-                y: { ticks: { color: '#E0E0E0', callback: v => 'R$ ' + (v/1e6).toFixed(1)+'M' } },
-                x: { ticks: { color: '#E0E0E0' } }
-            }
-        }
-    });
-
-    const lucroBDF = fatBDFMedio * (cenario==='pessimista'?0.12:cenario==='realista'?0.17:0.22);
-    const lucroTotal = mediaLLSim + lucroBDF;
-    if (graficoComp) graficoComp.destroy();
-    const ctx2 = document.getElementById('graficoComposicao').getContext('2d');
-    graficoComp = new Chart(ctx2, {
-        type: 'bar',
-        data: {
-            labels: ['LL Venteno', 'Lucro BDF', 'Lucro Total'],
-            datasets: [{
-                data: [mediaLLSim, lucroBDF, lucroTotal],
-                backgroundColor: ['#4A4A4A', '#888', '#F47920'],
-                borderRadius: 6
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => 'R$ ' + c.raw.toLocaleString('pt-BR') } } },
-            scales: {
-                y: { ticks: { color: '#E0E0E0', callback: v => 'R$ ' + (v/1e6).toFixed(1)+'M' } },
-                x: { ticks: { color: '#E0E0E0' } }
-            }
-        }
-    });
-
-    document.getElementById('premissasTexto').innerHTML = `
-        <p><strong>Cenario ${cfg.nome}:</strong> ${cfg.desc}</p>
-        <p><strong>Fatores:</strong> Receita x${cfg.fatorReceita.toFixed(1)} | Frete x${cfg.fatorFrete.toFixed(1)} | ADM x${cfg.fatorADM.toFixed(1)} | Impostos x${cfg.fatorImpostos.toFixed(1)}</p>
-        <p><strong>Faturamento medio mensal BDF:</strong> R$ ${formatar(fatBDFMedio)}</p>
-        <p><strong>Lucro Adicional BDF:</strong> R$ ${formatar(lucroBDF)} (${cenario==='pessimista'?12:cenario==='realista'?17:22}%)</p>
-        <p style="color:var(--laranja);"><strong>Lucro Total Projetado (mensal):</strong> R$ ${formatar(lucroTotal)}</p>
-        <hr style="border-color:#555;margin:15px 0;">
-        <p><strong>Conclusao:</strong> ${cenario==='pessimista' ? 'Mesmo no pior cenario o lucro cresce, mas a margem e apertada. Exige controle rigido de custos.' : cenario==='realista' ? 'Cenario equilibrado: crescimento viavel com a estrutura atual. Margem de 17% sobre o BDF e realista.' : 'Cenario agressivo: exige aceleracao comercial e investimento. Retorno alto, mas risco tambem.'}</p>
+    document.getElementById('simPanel').innerHTML = `
+        <h3 style="margin-bottom:12px;">🧪 Simulação (${monthReal.month})</h3>
+        ${fields.map(f => {
+            const pct = sliders[f.key] || 0;
+            return `
+                <div class="sim-slider">
+                    <label>${f.label}</label>
+                    <input type="range" min="-50" max="100" value="${pct}" data-key="${f.key}" oninput="handleSlider(this)">
+                    <span>${pct > 0 ? '+' : ''}${pct}%</span>
+                </div>`;
+        }).join('')}
     `;
 }
 
-document.getElementById('cenarioSelect').addEventListener('change', e => atualizarDashboard(e.target.value));
-atualizarDashboard('realista');
+function handleSlider(el) {
+    const key = el.dataset.key;
+    sliders[key] = parseInt(el.value);
+    applySimulation();
+}
+
+function applySimulation() {
+    const { realFiltered } = getFilteredData();
+    const monthReal = realFiltered[realFiltered.length - 1];
+    if (!monthReal) return;
+
+    const base = { ...monthReal };
+    Object.entries(sliders).forEach(([key, pct]) => {
+        if (base[key] !== undefined) base[key] = monthReal[key] * (1 + pct / 100);
+    });
+
+    // Recalcular dependentes
+    base.receita_liquida = base.receita_bruta - base.impostos_servicos;
+    base.csp_total = base.frete_transferencia + base.terminal + base.folha;
+    base.lucro_bruto = base.receita_liquida - base.csp_total;
+    const despTotal = base.despesas_adm + base.despesa_opr + base.servico_prestado + base.comercial + base.imobilizado;
+    base.lucro_operacional = base.lucro_bruto - despTotal;
+    base.lucro_liquido = base.lucro_operacional - base.financeira;
+
+    simData = simData.map(d => d.month === monthReal.month ? base : d);
+    updateAll();
+}
+
+// ===================== TABLE =====================
+function renderTable() {
+    const { realFiltered, simFiltered } = getFilteredData();
+    const rows = [
+        { label: "Receita Operacional Bruta (ROB)", key: "receita_bruta" },
+        { label: "Impostos sobre Serviços", key: "impostos_servicos" },
+        { label: "Receita Operacional Líquida (ROL)", key: "receita_liquida" },
+        { label: "Frete Transferência", key: "frete_transferencia" },
+        { label: "Terminal", key: "terminal" },
+        { label: "Folha", key: "folha" },
+        { label: "Custos dos Serviços Prestados (CSP)", key: "csp_total" },
+        { label: "Lucro Bruto (LB)", key: "lucro_bruto" },
+        { label: "Despesas ADM", key: "despesas_adm" },
+        { label: "Despesa OPR", key: "despesa_opr" },
+        { label: "Lucro Operacional (LO)", key: "lucro_operacional" },
+        { label: "Financeira", key: "financeira" },
+        { label: "Lucro Líquido (LL)", key: "lucro_liquido" }
+    ];
+
+    const months = realFiltered.map(d => d.month);
+
+    let html = `<table><thead><tr><th>Conta</th>`;
+    months.forEach(m => { html += `<th>${m} (Real)</th>`; if (showSim) html += `<th>${m} (Sim)</th>`; });
+    html += `</tr></thead><tbody>`;
+
+    rows.forEach(row => {
+        html += `<tr><td>${row.label}</td>`;
+        realFiltered.forEach((d, i) => {
+            html += `<td>R$ ${fmt(d[row.key])}</td>`;
+            if (showSim) {
+                const simVal = simFiltered[i] ? simFiltered[i][row.key] : d[row.key];
+                html += `<td style="color:var(--fiery);">R$ ${fmt(simVal)}</td>`;
+            }
+        });
+        html += `</tr>`;
+    });
+
+    html += `</tbody></table>`;
+    document.getElementById('tableContainer').innerHTML = html;
+}
+
+// ===================== CHARTS =====================
+let chartRevenue, chartProfit, chartMargin, chartCost;
+
+function updateCharts() {
+    const { realFiltered, simFiltered } = getFilteredData();
+    if (!realFiltered.length) return;
+
+    // Revenue Chart
+    const labels = realFiltered.map(d => d.month.substring(0, 3));
+    const robData = realFiltered.map(d => d.receita_bruta);
+    const deducoesData = realFiltered.map(d => d.impostos_servicos);
+    const rolData = realFiltered.map(d => d.receita_liquida);
+    const simROB = simFiltered.map(d => d.receita_bruta);
+
+    if (chartRevenue) chartRevenue.destroy();
+    const ctx1 = document.getElementById('chartRevenue').getContext('2d');
+    chartRevenue = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Receita Bruta', data: robData, backgroundColor: '#E94F37', borderRadius: 6 },
+                { label: 'Deduções', data: deducoesData, backgroundColor: '#393E41', borderRadius: 6 },
+                { label: 'Receita Líquida', data: rolData, backgroundColor: 'rgba(57,62,65,0.4)', borderRadius: 6 },
+                ...(showSim ? [{ label: 'Sim. Receita', data: simROB, backgroundColor: 'rgba(233,79,55,0.3)', borderRadius: 6 }] : [])
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { size: 10 } } } }, scales: { y: { ticks: { callback: v => 'R$ ' + (v/1e6).toFixed(1)+'M' } } } }
+    });
+
+    // Profit Chart
+    const lbData = realFiltered.map(d => d.lucro_bruto);
+    const loData = realFiltered.map(d => d.lucro_operacional);
+    const llData = realFiltered.map(d => d.lucro_liquido);
+    const simLL = simFiltered.map(d => d.lucro_liquido);
+
+    if (chartProfit) chartProfit.destroy();
+    const ctx2 = document.getElementById('chartProfit').getContext('2d');
+    chartProfit = new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Lucro Bruto', data: lbData, borderColor: '#E94F37', backgroundColor: 'rgba(233,79,55,0.1)', tension: 0.3, fill: true },
+                { label: 'Lucro Operacional', data: loData, borderColor: '#393E41', tension: 0.3, fill: false },
+                { label: 'Lucro Líquido', data: llData, borderColor: '#6b7275', tension: 0.3, fill: false },
+                ...(showSim ? [{ label: 'Sim. LL', data: simLL, borderColor: '#E94F37', borderDash: [5,5], tension: 0.3 }] : [])
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { size: 10 } } } }, scales: { y: { ticks: { callback: v => 'R$ ' + (v/1e6).toFixed(1)+'M' } } } }
+    });
+
+    // Margin Chart
+    const margins = realFiltered.map(d => ({
+        mes: d.month.substring(0, 3),
+        "Margem Bruta": +(d.lucro_bruto / d.receita_bruta * 100).toFixed(1),
+        "Margem Op.": +(d.lucro_operacional / d.receita_bruta * 100).toFixed(1),
+        "Margem Líq.": +(d.lucro_liquido / d.receita_bruta * 100).toFixed(1)
+    }));
+
+    if (chartMargin) chartMargin.destroy();
+    const ctx3 = document.getElementById('chartMargin').getContext('2d');
+    chartMargin = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: margins.map(d => d.mes),
+            datasets: [
+                { label: 'Margem Bruta', data: margins.map(d => d["Margem Bruta"]), backgroundColor: '#E94F37', borderRadius: 6 },
+                { label: 'Margem Op.', data: margins.map(d => d["Margem Op."]), backgroundColor: '#393E41', borderRadius: 6 },
+                { label: 'Margem Líq.', data: margins.map(d => d["Margem Líq."]), backgroundColor: '#6b7275', borderRadius: 6 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { size: 10 } } } }, scales: { y: { ticks: { callback: v => v + '%' } } } }
+    });
+
+    // Cost Breakdown (Abril)
+    const abrilReal = realFiltered.find(d => d.month === "Abril") || realFiltered[realFiltered.length - 1];
+    const costData = [
+        { name: "Frete Transf.", value: abrilReal.frete_transferencia },
+        { name: "Terminal", value: abrilReal.terminal },
+        { name: "Folha", value: abrilReal.folha },
+        { name: "Desp. ADM", value: abrilReal.despesas_adm },
+        { name: "Desp. OPR", value: abrilReal.despesa_opr },
+        { name: "Financeira", value: abrilReal.financeira }
+    ].filter(d => d.value > 0);
+
+    if (chartCost) chartCost.destroy();
+    const ctx4 = document.getElementById('chartCost').getContext('2d');
+    chartCost = new Chart(ctx4, {
+        type: 'doughnut',
+        data: {
+            labels: costData.map(d => d.name),
+            datasets: [{ data: costData.map(d => d.value), backgroundColor: ['#E94F37', '#393E41', '#6b7275', '#c23d28', '#5a6165', '#f07060'], borderWidth: 0 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { size: 10 } } } } }
+    });
+}
+
+// ===================== MONTH FILTER =====================
+function renderMonthButtons() {
+    document.getElementById('monthButtons').innerHTML = ["Fevereiro", "Março", "Abril"].map(m => `
+        <button class="month-btn ${selectedMonths.includes(m) ? 'active' : ''}" onclick="toggleMonth('${m}')">${m.substring(0,3)}</button>
+    `).join('');
+}
+
+function toggleMonth(m) {
+    if (selectedMonths.includes(m)) {
+        if (selectedMonths.length === 1) return;
+        selectedMonths = selectedMonths.filter(x => x !== m);
+    } else {
+        selectedMonths = [...selectedMonths, m].sort((a,b) => {
+            const order = { Fevereiro: 2, "Março": 3, Abril: 4 };
+            return order[a] - order[b];
+        });
+    }
+    renderMonthButtons();
+    updateAll();
+}
+
+// ===================== INIT =====================
+document.getElementById('simToggle').addEventListener('change', e => {
+    showSim = e.target.checked;
+    updateAll();
+});
+
+renderMonthButtons();
+updateAll();
 </script>
 </body>
 </html>
