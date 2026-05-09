@@ -1,0 +1,316 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulacao DRE · Venteno</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --laranja: #F47920;
+            --cinza-escuro: #2C2C2C;
+            --cinza-card: #3A3A3A;
+            --cinza-claro: #4A4A4A;
+            --branco: #E0E0E0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--cinza-escuro);
+            color: var(--branco);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .header img { height: 50px; }
+        .container { max-width: 1400px; margin: auto; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .full { grid-column: span 2; }
+        .card {
+            background: var(--cinza-card);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        h2, h3 { color: var(--laranja); margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th { background: var(--laranja); padding: 8px 6px; text-align: right; }
+        td { padding: 6px 6px; border-bottom: 1px solid #555; text-align: right; }
+        td:first-child, th:first-child { text-align: left; }
+        input[type="number"] {
+            width: 110px;
+            background: var(--cinza-claro);
+            border: 1px solid #666;
+            color: white;
+            padding: 4px 6px;
+            border-radius: 4px;
+            text-align: right;
+            font-size: 0.9em;
+        }
+        select {
+            padding: 10px 20px; font-size: 1em; border-radius: 8px;
+            border: 1px solid var(--laranja); background: var(--cinza-card);
+            color: white; cursor: pointer;
+        }
+        .kpi-row { display: flex; gap: 20px; flex-wrap: wrap; }
+        .kpi {
+            flex: 1; min-width: 200px; background: var(--cinza-claro);
+            border-radius: 10px; padding: 20px; text-align: center;
+        }
+        .kpi-valor { font-size: 1.8em; font-weight: bold; color: var(--laranja); }
+        .chart-box { height: 300px; position: relative; }
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+            .full { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <img src="https://venteno.com.br/wp-content/uploads/2023/08/Componente-42-%E2%80%93-1-2.png" alt="Venteno Express">
+        <div>
+            <select id="cenarioSelect">
+                <option value="pessimista">Pessimista</option>
+                <option value="realista" selected>Realista</option>
+                <option value="otimista">Otimista</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="kpi-row" style="margin-bottom:20px;">
+        <div class="kpi"><div class="kpi-valor" id="kpiROB">-</div><small>Receita Bruta (ROB)</small></div>
+        <div class="kpi"><div class="kpi-valor" id="kpiLB">-</div><small>Lucro Bruto (LB)</small></div>
+        <div class="kpi"><div class="kpi-valor" id="kpiLL">-</div><small>Lucro Liquido (LL)</small></div>
+    </div>
+
+    <div class="card full" style="overflow-x:auto;">
+        <h2>DRE - Simulacao</h2>
+        <table id="tabelaDRE">
+            <thead>
+                <tr>
+                    <th>Conta</th>
+                    <th>Fevereiro</th><th>Marco</th><th>Abril</th>
+                    <th>Sim. Fev</th><th>Sim. Mar</th><th>Sim. Abr</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="grid" style="margin-top:20px;">
+        <div class="card">
+            <h3>Lucro Liquido (Real vs Simulado)</h3>
+            <div class="chart-box"><canvas id="graficoLL"></canvas></div>
+        </div>
+        <div class="card">
+            <h3>Composicao do Lucro Projetado</h3>
+            <div class="chart-box"><canvas id="graficoComposicao"></canvas></div>
+        </div>
+        <div class="card full">
+            <h3>Premissas & Conclusoes</h3>
+            <div id="premissasTexto"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ================= DADOS REAIS =================
+const real = {
+    'Receita Operacional Bruta (ROB)': [7294745.23, 9175593.27, 9063284.40],
+    'LANCAMENTO MANUAL':               [506.64, 0.00, 13460.00],
+    'IMPOSTOS SOBRE SERVICOS':         [636973.47, 634991.70, 602692.33],
+    'Receita Operacional Liquida (ROL)':[6657771.76, 8540601.57, 8460592.07],
+    'FRETE TRANSFERENCIA':             [3023544.67, 3918478.77, 4345392.60],
+    'TERMINAL':                         [328147.57, 338026.68, 337245.04],
+    'FOLHA':                            [567275.59, 650238.28, 672900.86],
+    'Custos dos Servicos Prestados (CSP)':[3918967.83, 4906743.73, 5355538.50],
+    'Lucro Bruto - DRE (LB)':          [2738803.93, 3633857.84, 3105053.57],
+    'DESPESAS ADM':                     [226477.64, 257700.41, 238362.48],
+    'DESPESA OPR':                      [1412560.45, 1482903.26, 1459683.33],
+    'Lucro Operacional (LO)':          [822057.08, 1645377.05, 1135860.22],
+    'FINANCEIRA':                       [460210.85, 595558.75, 572237.51],
+    'LUCRO LIQUIDO (LL)':              [297221.94, 1056625.78, 467833.43]
+};
+
+const meses = ['Fevereiro', 'Marco', 'Abril'];
+const contas = Object.keys(real);
+
+// ================= CENARIOS =================
+const cenarios = {
+    pessimista: {
+        nome: 'Pessimista',
+        fatorReceita: 1.6,
+        fatorFrete: 1.9,
+        fatorADM: 1.8,
+        fatorImpostos: 1.8,
+        desc: 'Crescimento moderado (60% da receita nova), custos sobem mais que o proporcional. Margem BDF: 12%.'
+    },
+    realista: {
+        nome: 'Realista',
+        fatorReceita: 2.0,
+        fatorFrete: 1.9,
+        fatorADM: 1.8,
+        fatorImpostos: 1.9,
+        desc: 'Crescimento esperado (100% da receita nova). Margem BDF: 17%. Premissa do CEO.'
+    },
+    otimista: {
+        nome: 'Otimista',
+        fatorReceita: 2.4,
+        fatorFrete: 2.2,
+        fatorADM: 2.0,
+        fatorImpostos: 2.1,
+        desc: 'Crescimento acelerado (140% da receita nova). Margem BDF: 22%.'
+    }
+};
+
+const fatBDFMedio = 7717213.73;
+
+// ================= SIMULACAO =================
+function simular(cenario) {
+    const cfg = cenarios[cenario];
+    const resultado = {};
+
+    contas.forEach(conta => {
+        const vals = real[conta];
+        if (!vals) return;
+        let simVals = [...vals];
+
+        if (conta === 'Receita Operacional Bruta (ROB)') {
+            simVals = vals.map(v => v * cfg.fatorReceita);
+        } else if (conta === 'FRETE TRANSFERENCIA') {
+            simVals = vals.map(v => v * cfg.fatorFrete);
+        } else if (conta === 'DESPESAS ADM') {
+            simVals = vals.map(v => v * cfg.fatorADM);
+        } else if (conta === 'IMPOSTOS SOBRE SERVICOS') {
+            simVals = vals.map(v => v * cfg.fatorImpostos);
+        }
+
+        resultado[conta] = { real: vals, sim: simVals };
+    });
+
+    resultado['Receita Operacional Liquida (ROL)'] = {
+        real: resultado['Receita Operacional Bruta (ROB)'].real.map((v,i) => v - resultado['IMPOSTOS SOBRE SERVICOS'].real[i]),
+        sim: resultado['Receita Operacional Bruta (ROB)'].sim.map((v,i) => v - resultado['IMPOSTOS SOBRE SERVICOS'].sim[i])
+    };
+    resultado['Custos dos Servicos Prestados (CSP)'] = {
+        real: resultado['FRETE TRANSFERENCIA'].real.map((v,i) => v + resultado['TERMINAL'].real[i] + resultado['FOLHA'].real[i]),
+        sim: resultado['FRETE TRANSFERENCIA'].sim.map((v,i) => v + resultado['TERMINAL'].sim[i] + resultado['FOLHA'].sim[i])
+    };
+    resultado['Lucro Bruto - DRE (LB)'] = {
+        real: resultado['Receita Operacional Liquida (ROL)'].real.map((v,i) => v - resultado['Custos dos Servicos Prestados (CSP)'].real[i]),
+        sim: resultado['Receita Operacional Liquida (ROL)'].sim.map((v,i) => v - resultado['Custos dos Servicos Prestados (CSP)'].sim[i])
+    };
+    resultado['Lucro Operacional (LO)'] = {
+        real: resultado['Lucro Bruto - DRE (LB)'].real.map((v,i) => v - resultado['DESPESAS ADM'].real[i] - resultado['DESPESA OPR'].real[i]),
+        sim: resultado['Lucro Bruto - DRE (LB)'].sim.map((v,i) => v - resultado['DESPESAS ADM'].sim[i] - resultado['DESPESA OPR'].sim[i])
+    };
+    resultado['LUCRO LIQUIDO (LL)'] = {
+        real: resultado['Lucro Operacional (LO)'].real.map((v,i) => v - resultado['FINANCEIRA'].real[i]),
+        sim: resultado['Lucro Operacional (LO)'].sim.map((v,i) => v - resultado['FINANCEIRA'].sim[i])
+    };
+
+    return resultado;
+}
+
+let dadosSimulados = simular('realista');
+let graficoLL, graficoComp;
+
+function formatar(val) { return val.toLocaleString('pt-BR', {minimumFractionDigits:2}); }
+
+function atualizarDashboard(cenario) {
+    dadosSimulados = simular(cenario);
+    const cfg = cenarios[cenario];
+
+    const llReal = dadosSimulados['LUCRO LIQUIDO (LL)'].real;
+    const llSim = dadosSimulados['LUCRO LIQUIDO (LL)'].sim;
+    const robSim = dadosSimulados['Receita Operacional Bruta (ROB)'].sim;
+    const lbSim = dadosSimulados['Lucro Bruto - DRE (LB)'].sim;
+    const mediaLLReal = llReal.reduce((a,b)=>a+b)/3;
+    const mediaLLSim = llSim.reduce((a,b)=>a+b)/3;
+
+    document.getElementById('kpiROB').innerText = 'R$ ' + formatar(robSim[2]);
+    document.getElementById('kpiLB').innerText = 'R$ ' + formatar(lbSim[2]);
+    document.getElementById('kpiLL').innerText = 'R$ ' + formatar(llSim[2]);
+
+    const tbody = document.querySelector('#tabelaDRE tbody');
+    tbody.innerHTML = '';
+    contas.forEach(conta => {
+        if (!dadosSimulados[conta]) return;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${conta}</td>` +
+            dadosSimulados[conta].real.map(v => `<td>R$ ${formatar(v)}</td>`).join('') +
+            dadosSimulados[conta].sim.map(v => `<td>R$ ${formatar(v)}</td>`).join('');
+        tbody.appendChild(tr);
+    });
+
+    if (graficoLL) graficoLL.destroy();
+    const ctx = document.getElementById('graficoLL').getContext('2d');
+    graficoLL = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: meses,
+            datasets: [
+                { label: 'LL Real', data: llReal, borderColor: '#888', backgroundColor: 'rgba(136,136,136,0.2)', tension: 0.3 },
+                { label: 'LL Simulado', data: llSim, borderColor: '#F47920', backgroundColor: 'rgba(244,121,32,0.2)', tension: 0.3 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#E0E0E0' } } },
+            scales: {
+                y: { ticks: { color: '#E0E0E0', callback: v => 'R$ ' + (v/1e6).toFixed(1)+'M' } },
+                x: { ticks: { color: '#E0E0E0' } }
+            }
+        }
+    });
+
+    const lucroBDF = fatBDFMedio * (cenario==='pessimista'?0.12:cenario==='realista'?0.17:0.22);
+    const lucroTotal = mediaLLSim + lucroBDF;
+    if (graficoComp) graficoComp.destroy();
+    const ctx2 = document.getElementById('graficoComposicao').getContext('2d');
+    graficoComp = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: ['LL Venteno', 'Lucro BDF', 'Lucro Total'],
+            datasets: [{
+                data: [mediaLLSim, lucroBDF, lucroTotal],
+                backgroundColor: ['#4A4A4A', '#888', '#F47920'],
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => 'R$ ' + c.raw.toLocaleString('pt-BR') } } },
+            scales: {
+                y: { ticks: { color: '#E0E0E0', callback: v => 'R$ ' + (v/1e6).toFixed(1)+'M' } },
+                x: { ticks: { color: '#E0E0E0' } }
+            }
+        }
+    });
+
+    document.getElementById('premissasTexto').innerHTML = `
+        <p><strong>Cenario ${cfg.nome}:</strong> ${cfg.desc}</p>
+        <p><strong>Fatores:</strong> Receita x${cfg.fatorReceita.toFixed(1)} | Frete x${cfg.fatorFrete.toFixed(1)} | ADM x${cfg.fatorADM.toFixed(1)} | Impostos x${cfg.fatorImpostos.toFixed(1)}</p>
+        <p><strong>Faturamento medio mensal BDF:</strong> R$ ${formatar(fatBDFMedio)}</p>
+        <p><strong>Lucro Adicional BDF:</strong> R$ ${formatar(lucroBDF)} (${cenario==='pessimista'?12:cenario==='realista'?17:22}%)</p>
+        <p style="color:var(--laranja);"><strong>Lucro Total Projetado (mensal):</strong> R$ ${formatar(lucroTotal)}</p>
+        <hr style="border-color:#555;margin:15px 0;">
+        <p><strong>Conclusao:</strong> ${cenario==='pessimista' ? 'Mesmo no pior cenario o lucro cresce, mas a margem e apertada. Exige controle rigido de custos.' : cenario==='realista' ? 'Cenario equilibrado: crescimento viavel com a estrutura atual. Margem de 17% sobre o BDF e realista.' : 'Cenario agressivo: exige aceleracao comercial e investimento. Retorno alto, mas risco tambem.'}</p>
+    `;
+}
+
+document.getElementById('cenarioSelect').addEventListener('change', e => atualizarDashboard(e.target.value));
+atualizarDashboard('realista');
+</script>
+</body>
+</html>
